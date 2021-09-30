@@ -48,11 +48,19 @@ steps:
     targetType: 'inline'
     script: |
       # Write-Host "LASTEXITCODE : $LASTEXITCODE"
+
+      # open the tfplan file, read it , and put it in $plan variable
       $plan = $(terraform show -json tfplan | ConvertFrom-Json)
+
+      # from the $plan, navigate to resource_changes section -> change sub section -> actions sub sub section (contains if something will be changed), store the value in $actions
       $actions = $plan.resource_changes.change.actions
+
+      # check the $actions, if it contains create or delete or update
       Write-Host "Terraform actions : $actions"
       if (($actions -contains 'create') -or ($actions -contains 'delete') -or ($actions -contains 'update'))
       {
+        
+        # run this, means make the anyTfChanges var, to true
         Write-Host "Terraform will perform the following actions : $actions"
         Write-Host "##vso[task.setvariable variable=anyTfChanges;]true"
       }
@@ -63,6 +71,8 @@ steps:
 
 - task: TerraformTaskV1@0
   displayName: terraform apply tfplan
+  
+  # condition, if anyTfChanges var is true, run this task for deployment
   condition: eq(variables.anyTfChanges, true)
   inputs:
     provider: 'azurerm'
